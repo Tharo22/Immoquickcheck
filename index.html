@@ -172,6 +172,13 @@ table.proj tr:last-child td{border-bottom:0}
       <button class="btn" id="btnDemo" type="button">Beispiel laden</button>
     </div>
     <p class="note">Die Felder enthalten ein Beispielobjekt. Überschreibe es mit deinen Werten, Ergebnisse siehst du oben und im Reiter „Ergebnis“.</p>
+    <details id="impBox" style="border:1px solid rgba(128,128,128,.45);border-radius:12px;padding:10px 14px;margin:0 0 14px">
+<summary style="cursor:pointer;font-weight:600;min-height:28px">Aus Besichtigung übernehmen</summary>
+<p style="margin:8px 0;font-size:13px;opacity:.8">Füge den Übergabecode aus der Besichtigungs-App ein. Wenn du über den Link aus der Besichtigung kommst, sind die Werte schon eingetragen.</p>
+<textarea id="impText" aria-label="Übergabecode" style="width:100%;min-height:70px;font:inherit;font-size:16px;color:inherit;background:rgba(128,128,128,.1);border:1px solid rgba(128,128,128,.4);border-radius:8px;padding:8px" placeholder="BESICHTIGUNG:..."></textarea>
+<button id="impBtn" type="button" style="margin-top:8px;min-height:42px;padding:0 16px;font:inherit;font-weight:600;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit">Übernehmen</button>
+<div id="impMsg" role="status" style="margin-top:8px;font-size:13px"></div>
+</details>
     <div id="form"></div>
   </section>
   <section class="tab" id="tab-ergebnis" aria-label="Ergebnis" hidden></section>
@@ -646,6 +653,44 @@ function renderForecast(r,N){
 }
 
 buildForm(); wire(); refreshAll(); showTab('eingabe'); update();
+
+function applyTransfer(p){
+  const n=v=>isFinite(+v)?+v:0;
+  ['kp','bj','qm','zi','kalt','stell','hgUml','hgNicht','grundst'].forEach(k=>{ if(p[k]!==undefined) s[k]=n(p[k]); });
+  s.renov=n(p.kosten);
+  s.mieteMode='abs'; s.mqm=s.qm>0?s.kalt/s.qm:0;
+  if(s.quote>0) s.darlehen=Math.round(s.kp*s.quote/100);
+  if(s.afaAuto) s.afa=suggestAfa(s.bj);
+  refreshAll(); schedule(); showTab('eingabe');
+  return 'Übernommen: Kaufpreis '+eur(s.kp)+', Fläche '+fmtNum(s.qm,2)+' m², Kosten vor Vermietung '+eur(s.renov)+'. Prüfe Darlehen, Zins und Nebenkosten.';
+}
+
+/* ---- Übernahme aus der Besichtigungs-App ---- */
+function parseTransfer(text){
+  try{
+    let t=String(text||'').trim().replace(/^BESICHTIGUNG:/,'');
+    let j=t.charAt(0)==='{'?t:decodeURIComponent(escape(atob(t.replace(/\s+/g,''))));
+    const p=JSON.parse(j); return p&&p.src==='besichtigung'?p:null;
+  }catch(e){ return null; }
+}
+function impMessage(txt,ok){
+  const m=document.getElementById('impMsg'); if(!m) return;
+  m.innerHTML=(ok?'':'')+txt+(ok?' <a href="../besichtigung/">Zurück zur Besichtigung</a>':'');
+  const b=document.getElementById('impBox'); if(b) b.open=true;
+}
+function impRun(text){
+  const p=parseTransfer(text);
+  if(!p){ impMessage('Das ist kein gültiger Übergabecode. Kopiere ihn in der Besichtigungs-App erneut.',false); return false; }
+  const msg=applyTransfer(p); impMessage(msg,true); return true;
+}
+document.getElementById('impBtn').addEventListener('click',()=>{ impRun(document.getElementById('impText').value); });
+(function(){
+  const m=location.hash.match(/^#import=(.+)$/);
+  if(!m) return;
+  let ok=false; try{ ok=impRun(decodeURIComponent(m[1])); }catch(e){}
+  try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+})();
+
 </script>
 </body>
 </html>
