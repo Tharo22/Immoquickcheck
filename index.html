@@ -11,13 +11,13 @@
 <meta name="theme-color" content="#0C1219" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
+@font-face{font-family:'IBM Plex Mono';src:url(fonts/plexmono-400.woff) format('woff');font-weight:400 500;font-style:normal;font-display:swap}
+@font-face{font-family:'IBM Plex Mono';src:url(fonts/plexmono-600.woff) format('woff');font-weight:600 700;font-style:normal;font-display:swap}
+
 :root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 </style>
 <title>Immobilien Schnellcheck</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: klebende Kopfzeile mit Live-Ergebnis, drei Reiter unten (Objekt, Ergebnis, Prognose).
    Eingaben als Zeilenliste wie in den iOS-Einstellungen, Zahlen in Mono wie auf einem Kontoauszug. */
@@ -25,7 +25,7 @@ body{margin:0}img{max-width:100%}[hidden]{display:none!important}
   --bg:#EEF1F5; --surface:#FFFFFF; --surface2:#F4F6F9; --ink:#121C2B; --muted:#5A6778; --line:#DCE2EA;
   --accent:#2B4C9B; --accent-ink:#FFFFFF; --accent-soft:#E2E9F8;
   --good:#17804F; --good-soft:#DCF2E6; --mid:#8F5F00; --mid-soft:#FBEECB; --bad:#B3302F; --bad-soft:#F8DDDC;
-  --font-body:'IBM Plex Sans',-apple-system,'Segoe UI',system-ui,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -691,6 +691,29 @@ document.getElementById('impBtn').addEventListener('click',()=>{ impRun(document
   try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
 })();
 
+</script>
+<footer class="legal-foot"><button type="button" id="legalBtn">Haftung &amp; Datenschutz</button></footer>
+<dialog id="legalDlg"><form method="dialog"><h2>Haftung &amp; Datenschutz</h2>
+<p id="legalWho" hidden></p>
+<h3>Haftung</h3><p>Diese App liefert Orientierungsrechnungen. Sie ersetzt keine Steuer-, Rechts-, Finanzierungs- oder Anlageberatung. Ergebnisse, Fristen und Rechtshinweise können unvollständig oder nicht mehr aktuell sein und hängen von deinen Eingaben und vom Einzelfall ab. Für Richtigkeit und Vollständigkeit wird keine Gewähr übernommen. Prüfe wichtige Entscheidungen mit Steuerberater, Rechtsanwalt oder Bank.</p>
+<h3>Datenschutz</h3><p>Es gibt kein Konto, keinen Server der App und keine Werbung. Deine Eingaben werden ausschließlich lokal im Speicher deines Browsers auf deinem Gerät abgelegt und nicht an mich oder Dritte übertragen. Es werden weder Tracking noch Cookies zu Analysezwecken eingesetzt, und alle Schriften liegen auf demselben Server, es werden keine Schriften bei Google geladen.</p>
+<p>Beim Aufruf der Seite verarbeitet der Hosting-Anbieter GitHub (GitHub Pages) technisch notwendig Verbindungsdaten wie die IP-Adresse. Darauf hat die App keinen Einfluss, siehe die Datenschutzerklärung von GitHub.</p>
+<p>Die Daten bleiben auf deinem Gerät, solange du sie nicht selbst exportierst oder weitergibst. Wenn du Browserdaten löschst oder die App entfernst, sind sie weg. Lege deshalb regelmäßig ein Backup an, soweit die App es anbietet. Besonders bei Mieterdaten bist du selbst für den datenschutzgerechten Umgang verantwortlich.</p>
+<button class="legal-ok" value="ok">Schließen</button></form></dialog>
+<style>
+.legal-foot{text-align:center;padding:18px 16px calc(100px + env(safe-area-inset-bottom));font:12px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+.legal-foot button{background:none;border:0;color:inherit;opacity:.6;text-decoration:underline;font:inherit;padding:8px;cursor:pointer}
+#legalDlg{color-scheme:light dark;background:Canvas;color:CanvasText;border:1px solid color-mix(in srgb,CanvasText 25%,transparent);border-radius:14px;padding:18px;max-width:min(460px,calc(100vw - 32px));max-height:80vh;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+#legalDlg::backdrop{background:rgba(0,0,0,.5)}
+#legalDlg h2{font-size:18px;margin:0 0 8px}#legalDlg h3{font-size:14px;margin:14px 0 4px}#legalDlg p{margin:0 0 8px}
+.legal-ok{margin-top:8px;width:100%;min-height:44px;border-radius:10px;border:1px solid color-mix(in srgb,CanvasText 30%,transparent);background:none;color:inherit;font:inherit;font-weight:600;cursor:pointer}
+</style>
+<script>
+/* Anbieter (optional, z. B. Name und E-Mail für öffentliche Weitergabe): */
+var LEGAL_ANBIETER='';
+(function(){var b=document.getElementById('legalBtn'),d=document.getElementById('legalDlg'),w=document.getElementById('legalWho');
+if(LEGAL_ANBIETER){w.textContent='Anbieter: '+LEGAL_ANBIETER;w.hidden=false}
+b.addEventListener('click',function(){if(d.showModal)d.showModal();else d.setAttribute('open','')})})();
 </script>
 </body>
 </html>
