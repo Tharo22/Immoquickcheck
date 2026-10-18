@@ -21,6 +21,11 @@ body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 .brand{font-family:'Bricolage Grotesque',var(--font-body)}
 .top{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--bg)),var(--bg))}
 /*ENDBRAND*/
+/*VIZ*/
+.gauge{display:block;width:100%;max-width:340px;height:auto;margin:6px auto 0;overflow:visible}
+.gauge text{font-family:var(--font-body);fill:var(--muted);font-size:10.5px}
+.gauge .gz{font-weight:600}
+/*ENDVIZ*/
 </style>
 <title>Immobilien Schnellcheck</title>
 <style>
@@ -545,6 +550,17 @@ function tr(label,m,sign,total,sub){
 }
 function tile(l,v,sub,t){ return `<div class="tile"><div class="tl">${l}</div><div class="tv ${t?'t-'+t:''}">${v}</div>${sub?`<div class="ts">${sub}</div>`:''}</div>`; }
 
+function gauge(score,tone){
+  const cx=150,cy=130,r=100,pt=v=>{ const a=Math.PI*(1-v/10); return [cx+r*Math.cos(a),cy-r*Math.sin(a)]; };
+  const seg=(a,b,c)=>{ const [x0,y0]=pt(a),[x1,y1]=pt(b); return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="var(--${c})" stroke-width="16" opacity=".35"/>`; };
+  const fill=(a,b,c)=>{ if(b<=a) return ''; const [x0,y0]=pt(a),[x1,y1]=pt(b); return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="var(--${c})" stroke-width="16"/>`; };
+  const zones=[[0,4,'bad'],[4,6,'mid'],[6,10,'good']];
+  let g=zones.map(z=>seg(z[0]+0.04,z[1]-0.04,z[2])).join('');
+  zones.forEach(z=>{ g+=fill(z[0]+0.04,Math.min(score,z[1])-0.04,z[2]); });
+  const [nx,ny]=pt(score);
+  const lab=[[2,'Schwach'],[5,'Mittel'],[8,'Solide bis stark']].map(([v,t])=>{ const a=Math.PI*(1-v/10), x=cx+(r+30)*Math.cos(a), y=cy-(r+30)*Math.sin(a); return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" class="gz">${t}</text>`; }).join('');
+  return `<svg class="gauge" viewBox="-40 -10 380 150" role="img" aria-label="${score} von 10 Punkten, Bereich ${tone==='good'?'solide bis stark':tone==='mid'?'mittel':'schwach'}">${g}<circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="11" fill="var(--surface)" stroke="var(--ink)" stroke-width="3"/>${lab}<text x="${cx}" y="${cy-4}" text-anchor="middle" style="font-family:var(--font-mono);font-size:34px;font-weight:600;fill:var(--ink)">${score}</text><text x="${cx}" y="${cy+14}" text-anchor="middle">von 10 Punkten</text></svg>`;
+}
 function renderResult(r){
   const el=$('tab-ergebnis');
   if(!r.ready){ el.innerHTML=`<div class="card empty"><b>Noch zu wenig Angaben</b>Trage mindestens Kaufpreis, Wohnfläche und Kaltmiete im Reiter „Objekt“ ein.</div>`; return; }
@@ -557,7 +573,7 @@ function renderResult(r){
   const bar=Array.from({length:10},(_,i)=>`<span class="${i<r.score?'on':''}"></span>`).join('');
   let h=`<div class="card verdict"><div class="vl">Gesamteinschätzung</div>
     <div class="vh"><span class="vt">${lvText}</span><span class="num t-${lvTone}" style="font-weight:600;font-size:15px">${r.score} von 10 Punkten</span></div>
-    <div class="score s-${lvTone}" aria-hidden="true">${bar}</div><p>${summary.join(' ')}</p></div>`;
+    ${gauge(r.score,lvTone)}<p>${summary.join(' ')}</p></div>`;
 
   h+=`<h2>Kennzahlen</h2><div class="card">`+
     metric('Bruttomietrendite',`Jahreskaltmiete ÷ Kaufpreis. Gut ab ${pct(s.tBrG,1)}, mittel ab ${pct(s.tBrO,1)}.`,pct(r.brutto),r.rt.brutto)+
