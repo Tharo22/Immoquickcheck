@@ -323,7 +323,7 @@ function project(s,r,N){
 /* ---------- Zustand ---------- */
 const DEFAULTS={kp:190000,bj:1998,qm:62,zi:2,grest:5,notar:2,makler:3.57,quote:90,darlehen:171000,zins:3.7,tilg:2,bindung:10,anschluss:4,
   kueche:4000,renov:8000,geb:80,afa:2,afaAuto:true,grenz:42,kalt:760,mqm:0,mieteMode:'abs',stell:35,sonst:0,hgUml:150,hgNicht:70,grundst:300,
-  ausfall:3,ruecklage:12,kost:2,miete:2,wert:2,horizont:10,
+  ausfall:3,ruecklage:12,kost:2,miete:2,wert:2,horizont:10,alt:3,altSt:26.375,
   tBrG:5,tBrO:3.5,tNeG:3.5,tNeO:2.5,tCfG:50,tCfO:-50,tEkG:6,tEkO:3};
 const OBJEKT_KEYS=['kp','bj','qm','zi','kueche','renov','darlehen','kalt','mqm','stell','sonst','hgUml','hgNicht','grundst'];
 const STORE='immobilien-schnellcheck-v1';
@@ -404,7 +404,9 @@ const SECTIONS=[
   {k:'kost',l:'Kostensteigerung p. a.',u:'%',d:2},
   {k:'miete',l:'Mietsteigerung p. a.',u:'%',d:2},
   {k:'wert',l:'Wertsteigerung p. a.',u:'%',d:2},
-  {k:'horizont',l:'Betrachtungszeitraum',u:'Jahre',d:0}]},
+  {k:'horizont',l:'Betrachtungszeitraum',u:'Jahre',d:0},
+  {k:'alt',l:'Alternative Anlage, Rendite p. a.',h:'Festgeld oder Fonds, vor Steuern',u:'%',d:2},
+  {k:'altSt',l:'Steuer auf die Erträge der Alternative',h:'Abgeltungsteuer inkl. Soli: 26,375 %',u:'%',d:3}]},
  {id:'thr',t:'Bewertungsschwellen',rows:[
   {k:'tBrG',l:'Bruttorendite gut ab',u:'%',d:2},{k:'tBrO',l:'Bruttorendite mittel ab',u:'%',d:2},
   {k:'tNeG',l:'Nettorendite gut ab',u:'%',d:2},{k:'tNeO',l:'Nettorendite mittel ab',u:'%',d:2},
@@ -651,6 +653,20 @@ function chart(series,N){
    end(series.wert,'var(--accent)')+end(series.rest,'var(--muted)')+end(series.gewinn,'var(--good)')+`</svg>`;
 }
 
+
+function altVergleich(r,p,N){
+  if(!(r.ek>0)) return '';
+  const eff=Math.max(0,s.alt)*(1-Math.min(100,Math.max(0,s.altSt))/100)/100;
+  const altEnd=r.ek*Math.pow(1+eff,N), altGew=altEnd-r.ek, immGew=p.rows[N-1].gewinn, d=immGew-altGew, alt1=r.ek*eff;
+  const mx=Math.max(Math.abs(immGew),Math.abs(altGew),1);
+  const bar=(l,v,c,sub)=>`<div class="tr" style="grid-template-columns:92px minmax(0,1fr) auto;gap:8px;align-items:center"><span>${l}</span><span style="display:block;background:var(--surface2);border-radius:4px;height:16px"><span style="display:block;height:16px;border-radius:4px;background:${c};width:${Math.max(1,Math.abs(v)/mx*100).toFixed(1)}%"></span></span><span class="n">${eur(v,0,true)}</span></div>`;
+  const win=d>=0;
+  return `<h2>Vergleich mit einer Alternative</h2><div class="card tbl">`+
+    bar('Immobilie',immGew,'var(--accent)')+bar('Alternative',altGew,'var(--muted)')+
+    `<div class="tr tax total"><span>${win?'Vorsprung Immobilie':'Rückstand Immobilie'}<small>nach ${N} Jahren</small></span><span class="n t-${win?'good':'bad'}">${win?'▲':'▼'} ${eur(d,0,true)}</span></div>`+
+    `<div class="tr tax"><span>Jahr 1<small>Immobilie ${eur(r.vermZ,0,true)} · Alternative ${eur(alt1,0,true)}</small></span><span class="n t-${r.vermZ>=alt1?'good':'bad'}">${eur(r.vermZ-alt1,0,true)}</span></div></div>`+
+    `<p class="note">Die Alternative legt dein Eigenkapital von ${eur(r.ek)} mit ${pct(s.alt,2)} an, abzüglich ${pct(s.altSt,3)} Steuer, und lässt Erträge im Depot. Bei der Immobilie zählen Wertzuwachs, Tilgung und Cashflow nach Steuern, ohne Verkaufskosten. Sie bindet Aufwand und trägt Klumpenrisiko, die Alternative nicht. Das ist ein Rechenvergleich, keine Anlageberatung.</p>`;
+}
 function renderForecast(r,N){
   const el=$('tab-prognose');
   if(!r.ready){ el.innerHTML=`<div class="card empty"><b>Noch zu wenig Angaben</b>Trage mindestens Kaufpreis, Wohnfläche und Kaltmiete im Reiter „Objekt“ ein.</div>`; return; }
@@ -667,6 +683,7 @@ function renderForecast(r,N){
     tile('Restschuld',eur(last.rest),last.rest<=0?'Voll getilgt':'')+
     tile('Cashflow kumuliert',eur(last.kum,0,true),'nach Steuern, ohne Tilgung',sgnTone(last.kum))+
     tile('Gewinn kumuliert',eur(last.gewinn,0,true),`Wert − Restschuld − Eigenkapital ${eur(r.ek)} + Cashflow`,sgnTone(last.gewinn))+`</div>`;
+  h+=altVergleich(r,p,N);
   h+=`<h2>Jahre im Detail</h2><div class="card scroll"><table class="proj"><thead><tr><th>Jahr</th><th>Warmmiete</th><th>Zinsen</th><th>Tilgung</th><th>CF n. St.</th><th>Wert</th><th>Restschuld</th><th>Gewinn</th></tr></thead><tbody>`+
     p.rows.map(x=>`<tr><td>${x.t}</td><td>${eur(x.warm)}</td><td>${eur(x.zins)}</td><td>${eur(x.tilg)}</td><td class="t-${sgnTone(x.cfNach/12)}">${eur(x.cfNach,0,true)}</td><td>${eur(x.wert)}</td><td>${eur(x.rest)}</td><td class="t-${sgnTone(x.gewinn)}">${eur(x.gewinn,0,true)}</td></tr>`).join('')+`</tbody></table></div>`;
   h+=`<p class="note">Mieten wachsen mit der Mietsteigerung, Kosten und Rücklage mit der Kostensteigerung. Nach der Zinsbindung gilt der Anschlusszins bei gleicher Rate. Die Abschreibung läuft bis zur vollen Basis.</p>`;
