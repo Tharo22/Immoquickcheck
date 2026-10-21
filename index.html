@@ -212,6 +212,16 @@ const div=(a,b)=>b?a/b:0;
 function suggestAfa(bj){ if(!bj) return 2; if(bj<1925) return 2.5; if(bj>=2023) return 3; return 2; }
 function rating(v,good,ok){ if(v===null||!isFinite(v)) return 1; return v>=good?2:(v>=ok?1:0); }
 
+/* Disagio als Werbungskosten: bei mindestens 5 Jahren Bindung im ersten Jahr, sonst verteilt über die Bindung. */
+function disDed(dis,bind,t){ if(!(dis>0)) return 0; const b=Math.round(bind); if(b>=5) return t===1?dis:0; const n=Math.max(1,b); return t<=n?dis/n:0; }
+/* Effektiver Jahreszins über die Zinsbindung: Auszahlung = Darlehen minus Disagio. */
+function effDis(D,dis,rateM,bind,rest){
+  const n=Math.round(bind)*12; if(!(D>0)||n<1) return null;
+  const f=i=>{ let v=rest/Math.pow(1+i,n); for(let k=1;k<=n;k++) v+=rateM/Math.pow(1+i,k); return v-(D-dis); };
+  let lo=0,hi=0.05; if(f(lo)<0) return null; while(f(hi)>0&&hi<1) hi*=2;
+  for(let j=0;j<60;j++){ const m=(lo+hi)/2; if(f(m)>0) lo=m; else hi=m; }
+  return (Math.pow(1+(lo+hi)/2,12)-1)*100;
+}
 function amortize(D,z1,z2,tilgPct,bindJ,years){
   const rows=[]; let bal=D; const rate=D*(z1+tilgPct)/1200; let payoffM=null;
   for(let y=1;y<=years;y++){
@@ -238,7 +248,8 @@ function calc(s){
   r.kosten=s.kueche+s.renov;
   r.gesamt=s.kp+r.nk+r.kosten;
   r.darlehen=clamp(s.darlehen,0,r.gesamt);
-  r.ek=r.gesamt-r.darlehen;
+  r.dis=r.darlehen*clamp(s.dis||0,0,20)/100;
+  r.ek=r.gesamt-r.darlehen+r.dis;
   r.quoteEff=div(r.darlehen,s.kp)*100;
   const am=amortize(r.darlehen,s.zins,s.anschluss,s.tilg,s.bindung,50);
   r.am=am; r.rateM=am.rate;
@@ -263,7 +274,9 @@ function calc(s){
   r.afaJ=r.afaBasis*s.afa/100;
 
   r.zins1M=am.rows[0].zins/12; r.tilg1J=am.rows[0].tilg;
-  r.zveM=r.warmM-r.bewM-r.zins1M-r.afaJ/12;
+  r.disJ=disDed(r.dis,s.bindung,1);
+  r.zveM=r.warmM-r.bewM-r.zins1M-r.afaJ/12-r.disJ/12;
+  r.effD=r.dis>0?effDis(r.darlehen,r.dis,am.rate,s.bindung,r.restBindung):null;
   r.steuerM=r.zveM*s.grenz/100;
   r.cfNachM=r.cfVorM-r.steuerM;
   r.sofortSteuer=r.regelUeber?0:s.renov*s.grenz/100;
@@ -308,7 +321,7 @@ function project(s,r,N){
     const afa=Math.min(r.afaJ,Math.max(r.afaBasis-afaCum,0)); afaCum+=afa;
     const noi=warm-ausfall-bew-ruecklage;
     const cfVor=noi-(a.zins+a.tilg);
-    const steuer=(warm-bew-a.zins-afa)*s.grenz/100;
+    const steuer=(warm-bew-a.zins-afa-disDed(r.dis,s.bindung,t))*s.grenz/100;
     const cfNach=cfVor-steuer; kum+=cfNach;
     const wert=s.kp*Math.pow(1+s.wert/100,t);
     const verm=(wert-wPrev)+a.tilg+cfNach; wPrev=wert;
@@ -321,7 +334,7 @@ function project(s,r,N){
 /*CALC_END*/
 
 /* ---------- Zustand ---------- */
-const DEFAULTS={kp:190000,bj:1998,qm:62,zi:2,grest:5,notar:2,makler:3.57,quote:90,darlehen:171000,zins:3.7,tilg:2,bindung:10,anschluss:4,
+const DEFAULTS={kp:190000,bj:1998,qm:62,zi:2,grest:5,notar:2,makler:3.57,quote:90,darlehen:171000,zins:3.7,dis:0,tilg:2,bindung:10,anschluss:4,
   kueche:4000,renov:8000,geb:80,afa:2,afaAuto:true,grenz:42,kalt:760,mqm:0,mieteMode:'abs',stell:35,sonst:0,hgUml:150,hgNicht:70,grundst:300,
   ausfall:3,ruecklage:12,kost:2,miete:2,wert:2,horizont:10,alt:3,altSt:26.375,
   tBrG:5,tBrO:3.5,tNeG:3.5,tNeO:2.5,tCfG:50,tCfO:-50,tEkG:6,tEkO:3};
@@ -369,10 +382,12 @@ const SECTIONS=[
   {k:'darlehen',l:'Darlehenshöhe',u:'€',d:0},
   {c:'ekC',l:'Eigenkapital'},
   {k:'zins',l:'Sollzins',u:'%',d:2},
+  {k:'dis',l:'Disagio (optional)',h:'Trage den niedrigeren Sollzins oben ein. Kommt zum Eigenkapital, mindert die Steuer im 1. Jahr.',u:'%',d:2},
   {k:'tilg',l:'Anfängliche Tilgung',u:'%',d:2},
   {k:'bindung',l:'Zinsbindung',u:'Jahre',d:0},
   {k:'anschluss',l:'Zins danach',h:'Annahme für die Prognose, Rate bleibt gleich',u:'%',d:2},
   {c:'rateC',l:'Rate an die Bank (Annuität)'},
+  {c:'effC',l:'Effektivzins mit Disagio'},
   {c:'restC',l:'Restschuld nach Zinsbindung'}]},
  {id:'vor',t:'Kosten vor Vermietung',sum:'vorSum',rows:[
   {k:'kueche',l:'Küche und Einrichtung',h:'Zählt nicht zur 15-%-Regel',u:'€',d:0},
@@ -529,6 +544,7 @@ function renderComputed(r){
   setC('nkSum',`${pct(r.nkPct)} · ${eur(r.nk)}`); setC('sum-nk',pct(r.nkPct));
   setC('ekC',`${eur(r.ek)}`);
   setC('rateC',`${eur(r.rateM,2)} / Monat`);
+  setC('effC',r.effD!==null?`${dec(r.effD,2)} % (Disagio ${eur(r.dis)})`:'kein Disagio');
   setC('restC',s.bindung>0?`${eur(r.restBindung)} nach ${fmtNum(s.bindung,0)} J.`:'–');
   setC('sum-vor',eur(r.kosten));
   const reg=$('c-regC'); if(reg){ reg.innerHTML=r.regelUeber
