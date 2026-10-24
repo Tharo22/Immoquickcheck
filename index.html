@@ -185,6 +185,24 @@ details.fold[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
 .fold-tools button{border:0;background:none;color:var(--accent);font-size:12.5px;padding:6px;text-decoration:underline;min-height:32px}
 .reqnote{font-size:12.5px;color:var(--muted);margin:2px 4px 8px}
 /*ENDFOLD2*/
+/*CMP*/
+.tabbar{grid-template-columns:repeat(4,1fr)}
+.cmp-in{display:flex;gap:8px;padding:12px 14px}
+.cmp-in input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-size:16px;color:var(--ink)}
+.offer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:11px 14px;border-top:1px solid var(--line);align-items:center}
+.offer .n{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.offer .sb{font-size:12.5px;color:var(--muted)}
+.offer .ac{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cmp-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
+table.cmp{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+table.cmp th,table.cmp td{padding:9px 10px;text-align:right;border-top:1px solid var(--line);white-space:nowrap;min-width:96px;background:var(--surface)}
+table.cmp thead th{border-top:0;font-weight:600;vertical-align:bottom;white-space:normal;line-height:1.25;max-width:130px;overflow-wrap:anywhere}
+table.cmp th:first-child,table.cmp td:first-child{position:sticky;left:0;z-index:1;text-align:left;min-width:112px;max-width:112px;white-space:normal;font-weight:500;color:var(--muted);box-shadow:1px 0 0 var(--line)}
+table.cmp tr.grp td{background:var(--surface2);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 10px}
+table.cmp td.best{background:var(--good-soft);color:var(--good);font-weight:700}
+table.cmp td.na{color:var(--muted)}
+.cmp-best{margin:10px 4px 0;font-size:13.5px}
+/*ENDCMP*/
 </style>
 
 </head>
@@ -217,6 +235,12 @@ details.fold[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
   </section>
   <section class="tab" id="tab-ergebnis" aria-label="Ergebnis" hidden></section>
   <section class="tab" id="tab-prognose" aria-label="Prognose" hidden></section>
+  <section class="tab" id="tab-vergleich" aria-label="Angebote vergleichen" hidden>
+    <h2>Angebot speichern</h2>
+    <div class="card"><div class="cmp-in"><input id="offName" type="text" maxlength="40" placeholder="Name, z. B. Musterstraße 5" aria-label="Name des Angebots" autocomplete="off"><button class="btn primary" id="offSave" type="button">Speichern</button></div>
+      <div class="offer" style="border-top:1px solid var(--line)"><span class="sb" style="grid-column:1/-1">Speichert alle aktuellen Eingaben als Angebot. Du kannst bis zu 6 Angebote nebeneinander vergleichen. Das Objekt im Reiter „Objekt“ erscheint immer als erste Spalte.</span></div></div>
+    <div id="cmpHost"></div>
+  </section>
   <p class="foot">Orientierungsrechnung, keine Steuer- oder Anlageberatung. Die Steuer wird vereinfacht über deinen persönlichen Grenzsteuersatz berechnet (Soli und Kirchensteuer gehören in den Satz). Verlustverrechnung, Verkaufskosten und Spekulationsfrist sind nicht berücksichtigt.</p>
 </main>
 
@@ -227,6 +251,8 @@ details.fold[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-7M21 19H3"/></svg>Ergebnis</button>
   <button role="tab" data-tab="prognose" aria-selected="false" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Prognose</button>
+  <button role="tab" data-tab="vergleich" aria-selected="false" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="7" height="16" rx="1.5"/><rect x="13.5" y="4" width="7" height="16" rx="1.5"/><path d="M6 9h2M6 13h2M16 9h2M16 13h2"/></svg>Vergleich</button>
 </nav>
 
 <script>
@@ -367,6 +393,7 @@ const STORE='immobilien-schnellcheck-v1';
 let s=Object.assign({},DEFAULTS);
 try{ const raw=localStorage.getItem(STORE); if(raw) s=Object.assign({},DEFAULTS,JSON.parse(raw)); }catch(e){}
 if(!s.mqm) s.mqm=s.qm>0?s.kalt/s.qm:0;
+if(!Array.isArray(s.offers)) s.offers=[];
 function save(){ try{ localStorage.setItem(STORE,JSON.stringify(s)); }catch(e){} }
 
 /* ---------- Formatierung ---------- */
@@ -553,6 +580,7 @@ function onChange(k){
   if(k==='horizont') s.horizont=clamp(Math.round(s.horizont)||1,1,40);
 }
 function showTab(id){
+  if(id==='vergleich') setTimeout(renderCompare,0);
   document.querySelectorAll('.tab').forEach(t=>{ t.hidden=t.id!=='tab-'+id; });
   document.querySelectorAll('.tabbar button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===id)));
   window.scrollTo(0,0);
@@ -562,13 +590,14 @@ function showTab(id){
 let pending=false;
 function schedule(){ if(pending) return; pending=true; requestAnimationFrame(()=>{ pending=false; update(); }); }
 const $=(id)=>document.getElementById(id);
+const esc=(t)=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const setC=(id,txt)=>{ const el=$('c-'+id); if(el) el.textContent=txt; };
 
 function update(){
   const N=clamp(Math.round(s.horizont)||10,1,40);
   const r=calc(s);
   renderLive(r); renderComputed(r);
-  renderResult(r); renderForecast(r,N);
+  renderResult(r); renderForecast(r,N); if($('tab-vergleich')&&!$('tab-vergleich').hidden) renderCompare();
   document.querySelectorAll('#seg button').forEach(b=>{
     const q=+b.dataset.q; const on=s.quote>0?q===s.quote:q===0; b.setAttribute('aria-checked',String(on));
   });
@@ -761,7 +790,77 @@ function renderForecast(r,N){
   el.innerHTML=h; foldify(el,'prog');
 }
 
-buildForm(); wire(); refreshAll(); showTab('eingabe'); update();
+
+/* ---------- Angebote vergleichen ---------- */
+const MAX_OFF=6; let offPend=null, offMsg='';
+function snapshot(){ const o=JSON.parse(JSON.stringify(s)); delete o.offers; return o; }
+function offerRes(st,N){ const full=Object.assign({},DEFAULTS,st); const r=calc(full); let pj=null; if(r.ready){ try{ pj=project(full,r,N); }catch(e){} } return {full,r,pj}; }
+function renderCompare(){
+  const host=$('cmpHost'); if(!host) return;
+  const N=clamp(Math.round(s.horizont)||10,1,40);
+  const cols=[{name:'Aktuell',cur:true,st:snapshot()}].concat(s.offers.map(o=>({name:o.name,id:o.id,st:o.s}))).map(c=>Object.assign(c,offerRes(c.st,N)));
+  let h='';
+  if(offMsg) h+=`<div class="ok" role="status" style="margin:10px 0 0">${esc(offMsg)}</div>`;
+  h+=`<h2>Gespeicherte Angebote</h2><div class="card">`;
+  if(!s.offers.length) h+=`<div class="offer" style="border-top:0"><span class="sb" style="grid-column:1/-1">Noch kein Angebot gespeichert. Trage ein Objekt ein, gib oben einen Namen ein und tippe „Speichern“. Danach änderst du die Eingaben für das nächste Objekt.</span></div>`;
+  s.offers.forEach((o,i)=>{ const c=cols[i+1], r=c.r;
+    h+=`<div class="offer" style="${i?'':'border-top:0'}"><div><div class="n">${esc(o.name)}</div><div class="sb">${r.ready?`${eur(c.full.kp)} · Netto ${pct(r.netto)} · CF ${eur(r.cfNachM,0,true)}/Mo.`:'Angaben unvollständig'}</div></div>${r.ready?`<span class="pill p-${r.level==='stark'||r.level==='solide'?'good':r.level==='mittel'?'mid':'bad'}">${r.score}/10</span>`:'<span class="pill p-none">–</span>'}
+      <div class="ac"><button class="btn small" data-oact="load" data-id="${o.id}" type="button">Laden</button><button class="btn small" data-oact="upd" data-id="${o.id}" type="button">Mit Aktuell überschreiben</button><button class="btn small" data-oact="del" data-id="${o.id}" type="button" style="color:var(--bad)">${offPend===o.id?'Wirklich löschen?':'Löschen'}</button></div></div>`; });
+  h+='</div>';
+  const ready=cols.filter(c=>c.r.ready);
+  if(ready.length<2){ h+=`<div class="card empty" style="margin-top:14px"><b>Noch nichts zu vergleichen</b>Speichere mindestens ein Angebot mit Kaufpreis, Wohnfläche und Kaltmiete. Dann siehst du es hier neben dem aktuellen Objekt.</div>`; host.innerHTML=h; return; }
+  const ROWS=[
+   ['Preis und Miete'],
+   ['Kaufpreis',c=>eur(c.full.kp),c=>c.full.kp,-1],
+   ['Preis pro m²',c=>c.full.qm>0?eur(c.full.kp/c.full.qm):'–',c=>c.full.qm>0?c.full.kp/c.full.qm:null,-1],
+   ['Wohnfläche',c=>c.full.qm>0?fmtNum(c.full.qm,1)+' m²':'–',null],
+   ['Kaltmiete netto / Mo.',c=>eur(c.r.nettoKaltM,0),c=>c.r.nettoKaltM,1],
+   ['Rendite'],
+   ['Bruttorendite',c=>pct(c.r.brutto),c=>c.r.brutto,1],
+   ['Nettorendite',c=>pct(c.r.netto),c=>c.r.netto,1],
+   ['EK-Rentabilität',c=>pct(c.r.ekTilg),c=>c.r.ekTilg,1],
+   ['Cashflow'],
+   ['vor Steuern / Mo.',c=>eur(c.r.cfVorM,0,true),c=>c.r.cfVorM,1],
+   ['nach Steuern / Mo.',c=>eur(c.r.cfNachM,0,true),c=>c.r.cfNachM,1],
+   ['Finanzierung'],
+   ['Eigenkapital',c=>eur(c.r.ek),c=>c.r.ek,-1],
+   ['Rate / Mo.',c=>eur(c.r.rateM,0),c=>c.r.rateM,-1],
+   ['Prognose nach '+N+' J.'],
+   ['Gewinn kumuliert',c=>c.pj?eur(c.pj.rows[N-1].gewinn,0,true):'–',c=>c.pj?c.pj.rows[N-1].gewinn:null,1],
+   ['Cashflow kumuliert',c=>c.pj?eur(c.pj.rows[N-1].kum,0,true):'–',c=>c.pj?c.pj.rows[N-1].kum:null,1],
+   ['Bewertung'],
+   ['Punkte',c=>c.r.score+' von 10',c=>c.r.score,1]
+  ];
+  let t=`<div class="cmp-wrap card"><table class="cmp"><thead><tr><th scope="col"></th>${cols.map(c=>`<th scope="col">${esc(c.name)}${c.cur?'<br><span class="sb" style="font-weight:400;color:var(--muted)">im Reiter Objekt</span>':''}</th>`).join('')}</tr></thead><tbody>`;
+  ROWS.forEach(rw=>{
+    if(rw.length===1){ t+=`<tr class="grp"><td colspan="${cols.length+1}">${rw[0]}</td></tr>`; return; }
+    const [lab,fmt,val,dir]=rw; let best=null;
+    if(val&&dir){ const vs=cols.map(c=>c.r.ready?val(c):null); const ok=vs.filter(v=>v!==null&&isFinite(v)); if(ok.length>1){ best=dir>0?Math.max(...ok):Math.min(...ok); if(ok.every(v=>Math.abs(v-best)<1e-9)) best=null; } }
+    t+=`<tr><td>${lab}</td>${cols.map(c=>{ if(!c.r.ready) return '<td class="na">–</td>'; const v=val?val(c):null; const isBest=best!==null&&v!==null&&Math.abs(v-best)<1e-9; return `<td class="${isBest?'best':''}">${fmt(c)}${isBest?' ▲':''}</td>`; }).join('')}</tr>`;
+  });
+  t+='</tbody></table></div>';
+  h+=`<h2>Vergleich</h2>`+t+`<p class="note">Grün mit ▲ markiert den besten Wert je Zeile. Bei Kaufpreis, Preis pro m², Eigenkapital und Rate ist der niedrigste Wert der beste. Tippe die Kennzahlen im Reiter „Ergebnis“ an, um die Bewertung zu verstehen.</p>`;
+  const top=ready.slice().sort((a,b)=>b.r.score-a.r.score||b.r.netto-a.r.netto)[0], tied=ready.filter(c=>c.r.score===top.r.score).length>1;
+  h+=`<p class="cmp-best"><b>Beste Gesamtbewertung:</b> ${esc(top.name)} mit ${top.r.score} von 10 Punkten${tied?' (gleichauf mit mindestens einem weiteren Angebot, entscheide nach Netto-Rendite und Cashflow)':''}.</p>`;
+  host.innerHTML=h;
+  offMsg='';
+}
+function cmpActions(){
+  $('offSave').addEventListener('click',()=>{
+    const nm=$('offName'); let name=nm.value.trim(); if(!name) name='Angebot '+(s.offers.length+1);
+    if(s.offers.length>=MAX_OFF){ offMsg='Es sind höchstens '+MAX_OFF+' Angebote möglich. Lösche ein Angebot oder überschreibe eines.'; renderCompare(); return; }
+    s.offers.push({id:'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,ts:Date.now(),s:snapshot()}); nm.value='';
+    offMsg='„'+name+'“ gespeichert.'; save(); renderCompare();
+  });
+  $('cmpHost').addEventListener('click',e=>{
+    const b=e.target.closest('[data-oact]'); if(!b) return; const o=s.offers.find(x=>x.id===b.dataset.id); if(!o) return; const a=b.dataset.oact;
+    if(a==='load'){ const keep=s.offers; s=Object.assign({},DEFAULTS,o.s); s.offers=keep; refreshAll(); schedule(); showTab('eingabe'); return; }
+    if(a==='upd'){ o.s=snapshot(); offMsg='„'+o.name+'“ mit den aktuellen Eingaben überschrieben.'; save(); renderCompare(); return; }
+    if(a==='del'){ if(offPend!==o.id){ offPend=o.id; renderCompare(); setTimeout(()=>{ if(offPend===o.id){ offPend=null; renderCompare(); } },3500); return; }
+      offPend=null; s.offers=s.offers.filter(x=>x.id!==o.id); offMsg='Angebot gelöscht.'; save(); renderCompare(); }
+  });
+}
+buildForm(); wire(); cmpActions(); refreshAll(); showTab('eingabe'); update();
 
 function applyTransfer(p){
   const n=v=>isFinite(+v)?+v:0;
