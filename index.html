@@ -163,6 +163,28 @@ table.proj tr:last-child td{border-bottom:0}
 .tabbar button svg{width:22px;height:22px}
 .tabbar button[aria-selected="true"]{color:var(--accent);background:var(--accent-soft);font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/*FOLD2*/
+.req{color:var(--bad);font-weight:700;margin-left:3px}
+.row.miss .inp{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.misspill{margin-left:auto;font-size:11.5px;font-weight:600;color:var(--bad);background:var(--bad-soft);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.misspill:not([hidden])+.sumval{margin-left:8px}
+details.more{border-top:1px solid var(--line)}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;font-size:13px;font-weight:600;color:var(--accent)}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::after{content:'';width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:-3px 0 0 auto;transition:transform .15s}
+details.more[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+details.more>summary small{font-weight:400;color:var(--muted)}
+details.more>.row:first-of-type{border-top:1px solid var(--line)}
+details.fold{margin:12px 0 0}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 4px;-webkit-tap-highlight-color:transparent}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary h2{margin:0;flex:1}
+details.fold>summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s;margin:-4px 4px 0 0}
+details.fold[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
+.fold-tools{display:flex;gap:4px;justify-content:flex-end;margin:6px 0 8px}
+.fold-tools button{border:0;background:none;color:var(--accent);font-size:12.5px;padding:6px;text-decoration:underline;min-height:32px}
+.reqnote{font-size:12.5px;color:var(--muted);margin:2px 4px 8px}
+/*ENDFOLD2*/
 </style>
 
 </head>
@@ -181,6 +203,8 @@ table.proj tr:last-child td{border-bottom:0}
       <button class="btn" id="btnNew" type="button">Neues Objekt</button>
       <button class="btn" id="btnDemo" type="button">Beispiel laden</button>
     </div>
+    <div class="fold-tools"><button type="button" id="foldAll">Alle aufklappen</button><button type="button" id="foldNone">Alle zuklappen</button></div>
+    <p class="reqnote"><span class="req">*</span> Pflichtfelder für die Bewertung: Kaufpreis, Wohnfläche, Kaltmiete. Selten gebrauchte Felder liegen unter „Weitere Angaben“.</p>
     <p class="note">Die Felder enthalten ein Beispielobjekt. Überschreibe es mit deinen Werten, Ergebnisse siehst du oben und im Reiter „Ergebnis“.</p>
     <details id="impBox" style="border:1px solid rgba(128,128,128,.45);border-radius:12px;padding:10px 14px;margin:0 0 14px">
 <summary style="cursor:pointer;font-weight:600;min-height:28px">Aus Besichtigung übernehmen</summary>
@@ -370,7 +394,7 @@ const SECTIONS=[
   {k:'kp',l:'Kaufpreis',u:'€',d:0},
   {k:'bj',l:'Baujahr',u:'',d:0,plain:true},
   {k:'qm',l:'Wohnfläche',u:'m²',d:2},
-  {k:'zi',l:'Zimmer',u:'',d:1},
+  {k:'zi',l:'Zimmer',u:'',d:1,more:1},
   {c:'objInfo',l:'Auf einen Blick'}]},
  {id:'nk',t:'Kaufnebenkosten',sum:'nkSum',rows:[
   {k:'grest',l:'Grunderwerbsteuer',h:'Baden-Württemberg: 5,0 %',u:'%',d:2},
@@ -382,12 +406,12 @@ const SECTIONS=[
   {k:'darlehen',l:'Darlehenshöhe',u:'€',d:0},
   {c:'ekC',l:'Eigenkapital'},
   {k:'zins',l:'Sollzins',u:'%',d:2},
-  {k:'dis',l:'Disagio (optional)',h:'Trage den niedrigeren Sollzins oben ein. Kommt zum Eigenkapital, mindert die Steuer im 1. Jahr.',u:'%',d:2},
+  {k:'dis',more:1,l:'Disagio (optional)',h:'Trage den niedrigeren Sollzins oben ein. Kommt zum Eigenkapital, mindert die Steuer im 1. Jahr.',u:'%',d:2},
   {k:'tilg',l:'Anfängliche Tilgung',u:'%',d:2},
   {k:'bindung',l:'Zinsbindung',u:'Jahre',d:0},
-  {k:'anschluss',l:'Zins danach',h:'Annahme für die Prognose, Rate bleibt gleich',u:'%',d:2},
+  {k:'anschluss',more:1,l:'Zins danach',h:'Annahme für die Prognose, Rate bleibt gleich',u:'%',d:2},
   {c:'rateC',l:'Rate an die Bank (Annuität)'},
-  {c:'effC',l:'Effektivzins mit Disagio'},
+  {c:'effC',more:1,l:'Effektivzins mit Disagio'},
   {c:'restC',l:'Restschuld nach Zinsbindung'}]},
  {id:'vor',t:'Kosten vor Vermietung',sum:'vorSum',rows:[
   {k:'kueche',l:'Küche und Einrichtung',h:'Zählt nicht zur 15-%-Regel',u:'€',d:0},
@@ -404,7 +428,7 @@ const SECTIONS=[
   {k:'mqm',l:'Miete pro m²',h:'Kaltmiete = Miete pro m² × Wohnfläche. Du kannst auch die Kaltmiete eintragen.',u:'€/m²',d:2},
   {k:'kalt',l:'Kaltmiete',h:'pro Monat',u:'€',d:2},
   {k:'stell',l:'Stellplatz / Garage',h:'pro Monat',u:'€',d:2},
-  {k:'sonst',l:'Sonstiges',h:'pro Monat',u:'€',d:2},
+  {k:'sonst',more:1,l:'Sonstiges',h:'pro Monat',u:'€',d:2},
   {c:'nettoKalt',l:'Nettokaltmiete'},
   {c:'warm',l:'Warmmiete',h:'inkl. umlagefähiger Kosten'}]},
  {id:'bew',t:'Laufende Kosten',rows:[
@@ -412,16 +436,16 @@ const SECTIONS=[
   {k:'hgNicht',l:'Hausgeld, nicht umlagefähig',h:'pro Monat, inkl. WEG-Rücklage',u:'€',d:2},
   {c:'hgSum',l:'Hausgeld gesamt'},
   {k:'grundst',l:'Grundsteuer, umlagefähig',h:'pro Jahr',u:'€',d:0},
-  {k:'ausfall',l:'Mietausfall, kalkulatorisch',u:'%',d:2},
-  {k:'ruecklage',l:'Eigene Instandhaltungsrücklage',h:'pro m² und Jahr',u:'€',d:2},
-  {c:'ruecklC',l:'Rücklage pro Jahr'}]},
+  {k:'ausfall',more:1,l:'Mietausfall, kalkulatorisch',u:'%',d:2},
+  {k:'ruecklage',more:1,l:'Eigene Instandhaltungsrücklage',h:'pro m² und Jahr',u:'€',d:2},
+  {c:'ruecklC',more:1,l:'Rücklage pro Jahr'}]},
  {id:'prog',t:'Prognose-Annahmen',rows:[
   {k:'kost',l:'Kostensteigerung p. a.',u:'%',d:2},
   {k:'miete',l:'Mietsteigerung p. a.',u:'%',d:2},
   {k:'wert',l:'Wertsteigerung p. a.',u:'%',d:2},
   {k:'horizont',l:'Betrachtungszeitraum',u:'Jahre',d:0},
-  {k:'alt',l:'Alternative Anlage, Rendite p. a.',h:'Festgeld oder Fonds, vor Steuern',u:'%',d:2},
-  {k:'altSt',l:'Steuer auf die Erträge der Alternative',h:'Abgeltungsteuer inkl. Soli: 26,375 %',u:'%',d:3}]},
+  {k:'alt',more:1,l:'Alternative Anlage, Rendite p. a.',h:'Festgeld oder Fonds, vor Steuern',u:'%',d:2},
+  {k:'altSt',more:1,l:'Steuer auf die Erträge der Alternative',h:'Abgeltungsteuer inkl. Soli: 26,375 %',u:'%',d:3}]},
  {id:'thr',t:'Bewertungsschwellen',rows:[
   {k:'tBrG',l:'Bruttorendite gut ab',u:'%',d:2},{k:'tBrO',l:'Bruttorendite mittel ab',u:'%',d:2},
   {k:'tNeG',l:'Nettorendite gut ab',u:'%',d:2},{k:'tNeO',l:'Nettorendite mittel ab',u:'%',d:2},
@@ -429,32 +453,51 @@ const SECTIONS=[
   {k:'tEkG',l:'EK-Rentabilität gut ab',u:'%',d:2},{k:'tEkO',l:'EK-Rentabilität mittel ab',u:'%',d:2}]}
 ];
 const INT_KEYS=new Set(['bindung','horizont']);
+const REQ={kp:'Kaufpreis',qm:'Wohnfläche',kalt:'Kaltmiete'};
+const MORE_LAB={objekt:'Zimmerzahl',fin:'Disagio, Anschlusszins',miete:'Sonstige Einnahmen',bew:'Mietausfall, Rücklage',prog:'Alternative Anlage'};
+const UIKEY='immobilien-schnellcheck-ui-v1'; let ui={}; try{ ui=JSON.parse(localStorage.getItem(UIKEY)||'{}')||{}; }catch(e){ ui={}; }
+const isOpen=(id,def)=>id in ui?!!ui[id]:!!def;
+function saveUi(){ try{ localStorage.setItem(UIKEY,JSON.stringify(ui)); }catch(e){} }
 const inputs={};
 const chevron='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
+function rowHtml(row){
+  if(row.k){ const rq=REQ[row.k]?'<span class="req" aria-hidden="true">*</span>':'';
+    return `<label class="row" for="f-${row.k}" data-rk="${row.k}"><span class="lab">${row.l}${rq}${row.h?`<small>${row.h}</small>`:''}</span>`+
+    `<span class="inp"><input id="f-${row.k}" data-k="${row.k}" inputmode="${INT_KEYS.has(row.k)||row.plain?'numeric':'decimal'}" autocomplete="off" enterkeyhint="done"${REQ[row.k]?' aria-required="true"':''}><i>${row.u}</i></span></label>`;
+  }else if(row.c){
+    return `<div class="row calc"><span class="lab">${row.l}${row.h?`<small>${row.h}</small>`:''}</span><span class="val" id="c-${row.c}"></span></div>`;
+  }else if(row.seg){
+    return `<div class="row full"><span class="lab">${row.l}<small>${row.h}</small></span>`+
+    `<div class="seg" role="radiogroup" aria-label="${row.l}" id="seg">`+
+    [[100,'100 %'],[90,'90 %'],[80,'80 %'],[0,'Manuell']].map(q=>`<button type="button" role="radio" data-q="${q[0]}" aria-checked="false">${q[1]}</button>`).join('')+`</div></div>`;
+  }else if(row.afaHint){
+    return `<div class="row full calc"><span class="lab" id="afaHint"></span></div>`;
+  }
+  return '';
+}
 function buildForm(){
   const host=document.getElementById('form'); let html='';
   for(const sec of SECTIONS){
-    html+=`<details class="sec" ${sec.open?'open':''}><summary>${sec.t}${sec.sum?`<span class="sumval num" id="c-sum-${sec.id}"></span>`:''}${chevron}</summary><div class="rows">`;
-    for(const row of sec.rows){
-      if(row.k){
-        html+=`<label class="row" for="f-${row.k}"><span class="lab">${row.l}${row.h?`<small>${row.h}</small>`:''}</span>`+
-        `<span class="inp"><input id="f-${row.k}" data-k="${row.k}" inputmode="${INT_KEYS.has(row.k)||row.plain?'numeric':'decimal'}" autocomplete="off" enterkeyhint="done"><i>${row.u}</i></span></label>`;
-      }else if(row.c){
-        html+=`<div class="row calc"><span class="lab">${row.l}${row.h?`<small>${row.h}</small>`:''}</span><span class="val" id="c-${row.c}"></span></div>`;
-      }else if(row.seg){
-        html+=`<div class="row full"><span class="lab">${row.l}<small>${row.h}</small></span>`+
-        `<div class="seg" role="radiogroup" aria-label="${row.l}" id="seg">`+
-        [[100,'100 %'],[90,'90 %'],[80,'80 %'],[0,'Manuell']].map(q=>`<button type="button" role="radio" data-q="${q[0]}" aria-checked="false">${q[1]}</button>`).join('')+`</div></div>`;
-      }else if(row.afaHint){
-        html+=`<div class="row full calc"><span class="lab" id="afaHint"></span></div>`;
-      }
-    }
+    const main=sec.rows.filter(r=>!r.more), more=sec.rows.filter(r=>r.more);
+    html+=`<details class="sec" data-sec="${sec.id}" ${isOpen('s:'+sec.id,sec.open)?'open':''}><summary>${sec.t}<span class="misspill" id="miss-${sec.id}" hidden></span><span class="sumval num" id="c-sum-${sec.id}"></span>${chevron}</summary><div class="rows">`;
+    html+=main.map(rowHtml).join('');
+    if(more.length) html+=`<details class="more" data-more="${sec.id}" ${isOpen('m:'+sec.id,false)?'open':''}><summary>Weitere Angaben <small>${MORE_LAB[sec.id]||''}</small></summary>${more.map(rowHtml).join('')}</details>`;
     html+='</div></details>';
   }
   host.innerHTML=html;
   host.querySelectorAll('input[data-k]').forEach(el=>{ inputs[el.dataset.k]=el; });
+  host.querySelectorAll('details[data-sec]').forEach(d=>d.addEventListener('toggle',()=>{ ui['s:'+d.dataset.sec]=d.open; saveUi(); }));
+  host.querySelectorAll('details[data-more]').forEach(d=>d.addEventListener('toggle',()=>{ ui['m:'+d.dataset.more]=d.open; saveUi(); }));
 }
+function foldify(el,tabId){
+  const hs=[...el.children].filter(n=>n.tagName==='H2'); if(!hs.length) return;
+  hs.forEach(h=>{ const id='r:'+tabId+':'+h.textContent.trim(); const d=document.createElement('details'); d.className='fold'; d.dataset.fold=id; d.open=isOpen(id,true);
+    const sm=document.createElement('summary'), body=document.createElement('div'); let n=h.nextSibling;
+    while(n&&n.tagName!=='H2'){ const nx=n.nextSibling; body.appendChild(n); n=nx; }
+    h.replaceWith(d); sm.appendChild(h); d.append(sm,body); d.addEventListener('toggle',()=>{ ui[id]=d.open; saveUi(); }); });
+}
+function setAllFolds(open){ document.querySelectorAll('#form details.sec').forEach(d=>{ d.open=open; }); }
 
 const FIELD={}; SECTIONS.forEach(sec=>sec.rows.forEach(r=>{ if(r.k) FIELD[r.k]=r; }));
 function refreshField(k){
@@ -482,6 +525,8 @@ function wire(){
   document.getElementById('afaHint').addEventListener('click',e=>{
     if(e.target.closest('button')){ s.afaAuto=true; s.afa=suggestAfa(s.bj); refreshField('afa'); schedule(); }
   });
+  document.getElementById('foldAll').addEventListener('click',()=>setAllFolds(true));
+  document.getElementById('foldNone').addEventListener('click',()=>setAllFolds(false));
   document.getElementById('btnNew').addEventListener('click',()=>{
     OBJEKT_KEYS.forEach(k=>{ s[k]=0; }); s.mieteMode='abs'; s.quote=90; s.afa=2; s.afaAuto=true; refreshAll(); schedule(); inputs.kp.focus();
   });
@@ -530,9 +575,16 @@ function update(){
   save();
 }
 
+function missingReq(){ const m=[]; if(!(s.kp>0)) m.push('kp'); if(!(s.qm>0)) m.push('qm'); if(!(s.kalt>0)&&!(s.mqm>0)) m.push('kalt'); return m; }
+function renderReq(miss){
+  Object.keys(REQ).forEach(k=>{ const row=document.querySelector('[data-rk="'+k+'"]'); if(row) row.classList.toggle('miss',miss.includes(k)); });
+  const bySec={objekt:['kp','qm'],miete:['kalt']};
+  Object.keys(bySec).forEach(id=>{ const n=bySec[id].filter(k=>miss.includes(k)).length; const e=document.getElementById('miss-'+id); if(!e) return; e.hidden=!n; e.textContent=n?(n===1?'1 Pflichtfeld fehlt':n+' Pflichtfelder fehlen'):''; });
+}
 function renderLive(r){
   const v=$('liveVerdict'), l=$('live');
-  if(!r.ready){ v.className='pill p-none'; v.textContent='Eingaben ergänzen'; l.innerHTML=''; return; }
+  const miss=missingReq(); renderReq(miss);
+  if(!r.ready){ v.className='pill p-none'; v.textContent='Eingaben ergänzen'; l.innerHTML=miss.length?`<span>Es fehlen: <b>${miss.map(m=>REQ[m]).join(', ')}</b></span>`:''; return; }
   const lv=r.level, c=lv==='stark'||lv==='solide'?'good':(lv==='mittel'?'mid':'bad');
   v.className='pill p-'+c; v.textContent=lv.charAt(0).toUpperCase()+lv.slice(1);
   l.innerHTML=`<span>Brutto <b class="t-${tone(r.rt.brutto)}">${pct(r.brutto)}</b></span><span>Netto <b class="t-${tone(r.rt.netto)}">${pct(r.netto)}</b></span><span>Cashflow n. St. <b class="t-${tone(r.rt.cfNach)}">${eur(r.cfNachM,0,true)}</b> / Mo.</span>`;
@@ -547,6 +599,9 @@ function renderComputed(r){
   setC('effC',r.effD!==null?`${dec(r.effD,2)} % (Disagio ${eur(r.dis)})`:'kein Disagio');
   setC('restC',s.bindung>0?`${eur(r.restBindung)} nach ${fmtNum(s.bindung,0)} J.`:'–');
   setC('sum-vor',eur(r.kosten));
+  setC('sum-objekt',s.kp>0?eur(s.kp):''); setC('sum-fin',s.darlehen>0?eur(s.darlehen)+' · '+pct(s.zins,2):'kein Darlehen');
+  setC('sum-miete',r.nettoKaltM>0?eur(r.nettoKaltM,0)+' / Mo.':''); setC('sum-afa',pct(s.afa,1)+' AfA'); setC('sum-bew',eur(r.hausgeldM,0)+' / Mo.');
+  setC('sum-prog',fmtNum(s.horizont,0)+' Jahre');
   const reg=$('c-regC'); if(reg){ reg.innerHTML=r.regelUeber
     ?`<span class="pill p-bad">Überschritten</span><br><small>Grenze ${eur(r.grenze15)}</small>`:`<span class="pill p-good">Eingehalten</span><br><small>Grenze ${eur(r.grenze15)}</small>`; }
   setC('afaBasis',eur(r.afaBasis)); setC('afaJ',eur(r.afaJ));
@@ -639,7 +694,7 @@ function renderResult(r){
   if(r.dscr!==null&&r.dscr<1) h+=`<div class="hint h-bad"><span><b>Rate nicht gedeckt.</b> Die Mieteinnahmen decken die Bankrate nicht. Du schießt jeden Monat ${eur(-r.cfVorM)} zu (vor Steuern).</span></div>`;
   if(s.bindung>0&&r.restBindung>0&&s.anschluss>s.zins) h+=`<div class="hint h-mid"><span><b>Anschlusszins.</b> Nach ${fmtNum(s.bindung,0)} Jahren rechnet die Prognose mit ${pct(s.anschluss,2)}. Bei höheren Zinsen sinkt der Cashflow weiter.</span></div>`;
   h+=`<div class="hint"><span>Die Nettomietrendite bezieht sich auf die Gesamtinvestition. Mietausfall und eigene Rücklage mindern den Ertrag, werden aber nicht steuerlich angesetzt.</span></div>`;
-  el.innerHTML=h;
+  el.innerHTML=h; foldify(el,'erg');
 }
 
 function niceTicks(min,max,n){
@@ -703,7 +758,7 @@ function renderForecast(r,N){
   h+=`<h2>Jahre im Detail</h2><div class="card scroll"><table class="proj"><thead><tr><th>Jahr</th><th>Warmmiete</th><th>Zinsen</th><th>Tilgung</th><th>CF n. St.</th><th>Wert</th><th>Restschuld</th><th>Gewinn</th></tr></thead><tbody>`+
     p.rows.map(x=>`<tr><td>${x.t}</td><td>${eur(x.warm)}</td><td>${eur(x.zins)}</td><td>${eur(x.tilg)}</td><td class="t-${sgnTone(x.cfNach/12)}">${eur(x.cfNach,0,true)}</td><td>${eur(x.wert)}</td><td>${eur(x.rest)}</td><td class="t-${sgnTone(x.gewinn)}">${eur(x.gewinn,0,true)}</td></tr>`).join('')+`</tbody></table></div>`;
   h+=`<p class="note">Mieten wachsen mit der Mietsteigerung, Kosten und Rücklage mit der Kostensteigerung. Nach der Zinsbindung gilt der Anschlusszins bei gleicher Rate. Die Abschreibung läuft bis zur vollen Basis.</p>`;
-  el.innerHTML=h;
+  el.innerHTML=h; foldify(el,'prog');
 }
 
 buildForm(); wire(); refreshAll(); showTab('eingabe'); update();
